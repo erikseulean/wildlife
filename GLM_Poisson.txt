@@ -1,0 +1,16 @@
+
+model{ #tell JAGS this is the model
+
+  # Specify the Priors
+  beta0 ~ dnorm(0, 0.001) #JAGS wants precision
+  beta1 ~ dnorm(0, 0.001) # which is 1/sd
+  beta2 ~ dnorm(0, 0.001)
+
+  # Define the likelihood
+  for (i in 1:n){
+    C[i] ~ dbinom(p[i], N[i])                # 1. Probability model for data
+    logit(p[i]) <- logit.p[i]          # 2. Link function
+    logit.p[i] <- beta0 + beta1 * year[i] + beta2 * year[i]^2 # 3. Linear predictor
+  }
+}
+
