@@ -13,24 +13,30 @@ cat("
 model{
 
   # Priors and constraints
-  log.n1 ~ dnorm(N1, 0.01) # Initial population size
-  log.N[1] <- log.n1
-
+  log.N[1] ~ dnorm(N1, 0.01)
+    
   b0 ~ dnorm(0, 0.00001)  # Prior for the Intercept
   b1 ~ dnorm(0, 0.00001)  # Prior for the slope
 
   sig.n ~ dunif(0, 1)     # Standard deviation for the population
   tau.n <- pow(sig.n, -2) # Precision for the state process
-
+  
   sig.y ~ dunif(0, 1)     # Standard deviation for the observations process
   tau.y <- pow(sig.y, -2) # Precision for the observation process
 
+  for (t in 1: (nyrs-1)) {
+    mu[t] = log(exp(r[t]) * exp(log.N[t]) - catch[t])
+  }
+
   # Likelihood - State process
   for(t in 1:(nyrs-1)) {
-    log(r[t]) <- log.r[t] # Link function for the parameter
+    log(r[t]) <- log.r[t]       # Link function for the parameter
     log.r[t] <- b0 + b1*rain[t] # Linear model for the logarithm of the growth rate
 
-    log.N[t+1] ~ dnorm(r[t]+ log.N[t] - catch[t], tau.n)
+    # We transform back the logarithm of r[t] and logarithm of N[t]
+    # to be able to compute the mean log(r[t] * N[t] - catch[t])
+    # for the log of N[t+1].
+    log.N[t+1] ~ dnorm(mu[t], tau.n)
   }
 
   # Likelihood - Observation process
@@ -108,7 +114,7 @@ ni <- 100000 + nb
 # so no thinning occurs, meaning that we consider
 # the posterior samples to be sufficiently independent
 # to the point that no thinning is necessary.
-nt <- 1
+nt <- 5
 
 # Start the MCMC algorithm with the parameters provided
 out <- jags(
@@ -128,5 +134,5 @@ MCMCtrace(
     params = monitored_parameters[1:4],  # out parameters of interest
     iter = ni,                           # plot all iterations
     pdf = FALSE,                         # don't write to a PDF
-    ind = FALSE                          # chain specific densities
+    ind = FALSE                          # chain specific densities 
 )
