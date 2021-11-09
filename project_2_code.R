@@ -14,19 +14,15 @@ model{
 
   # Priors and constraints
   log.N[1] ~ dnorm(N1, 0.01)
-    
+
   b0 ~ dnorm(0, 0.00001)  # Prior for the Intercept
   b1 ~ dnorm(0, 0.00001)  # Prior for the slope
 
   sig.n ~ dunif(0, 1)     # Standard deviation for the population
   tau.n <- pow(sig.n, -2) # Precision for the state process
-  
+
   sig.y ~ dunif(0, 1)     # Standard deviation for the observations process
   tau.y <- pow(sig.y, -2) # Precision for the observation process
-
-  for (t in 1: (nyrs-1)) {
-    mu[t] = log(exp(r[t]) * exp(log.N[t]) - catch[t])
-  }
 
   # Likelihood - State process
   for(t in 1:(nyrs-1)) {
@@ -35,8 +31,9 @@ model{
 
     # We transform back the logarithm of r[t] and logarithm of N[t]
     # to be able to compute the mean log(r[t] * N[t] - catch[t])
-    # for the log of N[t+1].
-    log.N[t+1] ~ dnorm(mu[t], tau.n)
+    # for the log of N[t+1]. Catch is already on the normal scale
+    # as that is the way it is given as an input.
+    log.N[t+1] ~ dnorm(log(exp(r[t]) * exp(log.N[t]) - catch[t]), tau.n)
   }
 
   # Likelihood - Observation process
@@ -84,8 +81,8 @@ model_parameters <- list(
 # starting from the same initial configuration.
 initial_values <- function() {
   list(
-    b0 = runif(1, -2, 2),
-    b1 = runif(1, -2, 2),
+    b0 = runif(1, -5, 5),
+    b1 = runif(1, -5, 5),
     sig.n = runif(1, 0, 1),
     sig.y = runif(1, 0, 1)
   )
@@ -95,7 +92,7 @@ initial_values <- function() {
 # b0, b1, sig.n and sig.y will be monitored to see if the
 # chains converge to the posterior distribution while N.est
 # y.est will be used to draw conclusions. 
-monitored_parameters <- c("b0", "b1",  "sig.n", "sig.y", "N.est", "y.est")
+monitored_parameters <- c("b0", "b1",  "sig.n", "sig.y", "N.est")
 
 # Number of chains that we want to run
 nc <- 3
@@ -114,7 +111,7 @@ ni <- 100000 + nb
 # so no thinning occurs, meaning that we consider
 # the posterior samples to be sufficiently independent
 # to the point that no thinning is necessary.
-nt <- 5
+nt <- 1
 
 # Start the MCMC algorithm with the parameters provided
 out <- jags(
