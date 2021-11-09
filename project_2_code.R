@@ -27,21 +27,23 @@ model{
 
   # Likelihood - State process
   for(t in 1:(nyrs-1)) {
+    log(r[t]) <- log.r[t] # Link function for the parameter
+    log.r[t] <- b0 + b1*rain[t] # Linear model for the logarithm of the growth rate
+
     log.N[t+1] ~ dnorm(r[t]+ log.N[t], tau.n)
-    log(r[t]) <- log.r[t]
-    log.r[t] <- b0 + b1*rain[t]
   }
 
   # Likelihood - Observation process
   for (t in 1:nyrs) {
-     log.y[t] ~ dnorm(log.N[t], tau.y)
+     y[t] ~ dnorm(log.N[t], tau.y)
 
   }
 
   # Derive population and observation sizes on real scale
   for (t in 1:nyrs) {
+    # Transform from the logarithm scale by taking the inverse (exp(log(u)) = u)
     N.est[t] <- exp(log.N[t])
-    y.est[t] <- exp(log.y[t])
+    y.est[t] <- exp(y[t])
   }
 }
 ", fill = TRUE)
@@ -50,40 +52,79 @@ sink()
 projection <- 6
 
 # Passing in parameters from dataset
-wildebeest_model_parameters <- list(
-  rain = wildebeest$rain, # vector of rain quantity observed each year
-  y = log(wildebeest$Nhat), # vector of population observations
-  nyrs = nrow(wildebeest), # number of years included in the data
-  N1 = log(wildebeest$Nhat[1]) # initial population estimate
+model_parameters <- list(
+  # Vector of rain quantity observed each year
+  rain = wildebeest$rain,
+  # Vector of population observations
+  # We need to consider a logarithm transformation 
+  # as the model is modelling the logarithm of the counts
+  # in order to avoid negative values
+  y = log(wildebeest$Nhat),
+  # Number of years to include in the simulation
+  # Each sample will contain nyrs of data
+  nyrs = nrow(wildebeest),
+  # Initial population estimate
+  # We use the logarithm of the initial population
+  # when the surveillance of the population started
+  N1 = log(wildebeest$Nhat[1])
 )
 
 
 # Initial values
-wildebeest_inits <- function() {
-  list(b0 = runif(1, -2, 2),
-       b1 = runif(1, -2, 2),
-       sig.n = runif(1, 0, 1),
-       sig.y = runif(1, 0, 1)
+# For the initial values, we will generate randomly
+# values to make sure that multiple chains are not
+# starting from the same initial configuration.
+initial_values <- function() {
+  list(
+    b0 = runif(1, -2, 2),
+    b1 = runif(1, -2, 2),
+    sig.n = runif(1, 0, 1),
+    sig.y = runif(1, 0, 1)
   )
 }
 
-parms <- c("b0", "b1", "N.est", "y.est")
+# Parameters that we want to monitor from the model
+# b0, b1, sig.n and sig.y will be monitored to see if the
+# chains converge to the posterior distribution while N.est
+# y.est will be used to draw conclusions. 
+monitored_parameters <- c("b0", "b1",  "sig.n", "sig.y", "N.est", "y.est")
 
+# Number of chains that we want to run
 nc <- 3
+# Number of iterations for burn-in. These
+# iteration will be discarded before considering
+# summaries or chain convergence diagnostics.
 nb <- 100000
+# Total number of iterations to run the chain.
+# We started with smaller samples and increased
+# the values until we got to some satisfactory
+# effective sample sizes for the parameters of
+# interest.
 ni <- 100000 + nb
+
+# Number of thinning samples. This is set to 1
+# so no thinning occurs, meaning that we consider
+# the posterior samples to be sufficiently independent
+# to the point that no thinning is necessary.
 nt <- 1
 
-out <- jags(data = wildebeest_model_parameters,
-            inits = wildebeest_inits,
-            parameters.to.save = parms,
-            model.file = "project2.txt",
-            n.chains = nc,
-            n.iter = ni,
-            n.burnin = nb,
-            n.thin = nt)
-MCMCtrace(out,                      #the fitted model
-          params = parms[1:2],      #out parameters of interest
-          iter = ni,                #plot all iterations
-          pdf = FALSE,              #DON'T write to a PDF
-          ind = FALSE)              #chain specific densities
+# Start the MCMC algorithm with the parameters provided
+out <- jags(
+    data = model_parameters,
+    inits = initial_values,
+    parameters.to.save = monitored_parameters,
+    model.file = "project2.txt",
+    n.chains = nc,
+    n.iter = ni,
+    n.burnin = nb,
+    n.thin = nt
+)
+
+# Draw trace plots and density plots for the monitored parameters
+MCMCtrace(
+    out,                                 # the fitted model
+    params = monitored_parameters[1:4],  # out parameters of interest
+    iter = ni,                           # plot all iterations
+    pdf = FALSE,                         # don't write to a PDF
+    ind = FALSE                          # chain specific densities 
+)
