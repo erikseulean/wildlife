@@ -30,7 +30,7 @@ model{
     log(r[t]) <- log.r[t] # Link function for the parameter
     log.r[t] <- b0 + b1*rain[t] # Linear model for the logarithm of the growth rate
 
-    log.N[t+1] ~ dnorm(r[t]+ log.N[t], tau.n)
+    log.N[t+1] ~ dnorm(r[t]+ log.N[t] - catch[t], tau.n)
   }
 
   # Likelihood - Observation process
@@ -43,7 +43,6 @@ model{
   for (t in 1:nyrs) {
     # Transform from the logarithm scale by taking the inverse (exp(log(u)) = u)
     N.est[t] <- exp(log.N[t])
-    y.est[t] <- exp(y[t])
   }
 }
 ", fill = TRUE)
@@ -55,6 +54,9 @@ projection <- 6
 model_parameters <- list(
   # Vector of rain quantity observed each year
   rain = wildebeest$rain,
+  # Catch - the amount harvested (or illegal poaching)
+  # that happened on the wildebeest population
+  catch = wildebeest$Catch,
   # Vector of population observations
   # We need to consider a logarithm transformation 
   # as the model is modelling the logarithm of the counts
@@ -126,5 +128,5 @@ MCMCtrace(
     params = monitored_parameters[1:4],  # out parameters of interest
     iter = ni,                           # plot all iterations
     pdf = FALSE,                         # don't write to a PDF
-    ind = FALSE                          # chain specific densities 
+    ind = FALSE                          # chain specific densities
 )
