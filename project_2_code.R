@@ -13,10 +13,10 @@ cat("
 model{
 
   # Priors and constraints
-  log.N[1] ~ dnorm(N1, 0.01)
+  N[1] ~ dnorm(N1, 0.01)
 
-  b0 ~ dnorm(0, 0.00001)  # Prior for the Intercept
-  b1 ~ dnorm(0, 0.00001)  # Prior for the slope
+  b0 ~ dnorm(0, 0.0001)  # Prior for the Intercept
+  b1 ~ dnorm(0, 0.0001)  # Prior for the slope
 
   sig.n ~ dunif(0, 1)     # Standard deviation for the population
   tau.n <- pow(sig.n, -2) # Precision for the state process
@@ -29,23 +29,13 @@ model{
     log(r[t]) <- log.r[t]       # Link function for the parameter
     log.r[t] <- b0 + b1*rain[t] # Linear model for the logarithm of the growth rate
 
-    # We transform back the logarithm of r[t] and logarithm of N[t]
-    # to be able to compute the mean log(r[t] * N[t] - catch[t])
-    # for the log of N[t+1]. Catch is already on the normal scale
-    # as that is the way it is given as an input.
-    log.N[t+1] ~ dnorm(log(exp(r[t]) * exp(log.N[t]) - catch[t]), tau.n)
+    N[t+1] ~ dnorm(r[t] * N[t] - catch[t], tau.n)
   }
 
   # Likelihood - Observation process
   for (t in 1:nyrs) {
-     y[t] ~ dnorm(log.N[t], tau.y)
+     y[t] ~ dnorm(N[t], tau.y)
 
-  }
-
-  # Derive population and observation sizes on real scale
-  for (t in 1:nyrs) {
-    # Transform from the logarithm scale by taking the inverse (exp(log(u)) = u)
-    N.est[t] <- exp(log.N[t])
   }
 }
 ", fill = TRUE)
@@ -59,19 +49,19 @@ model_parameters <- list(
   rain = wildebeest$rain,
   # Catch - the amount harvested (or illegal poaching)
   # that happened on the wildebeest population
-  catch = wildebeest$Catch,
+  catch = wildebeest$Catch, 
   # Vector of population observations
   # We need to consider a logarithm transformation 
   # as the model is modelling the logarithm of the counts
   # in order to avoid negative values
-  y = log(wildebeest$Nhat),
+  y = wildebeest$Nhat,
   # Number of years to include in the simulation
   # Each sample will contain nyrs of data
   nyrs = nrow(wildebeest),
   # Initial population estimate
   # We use the logarithm of the initial population
   # when the surveillance of the population started
-  N1 = log(wildebeest$Nhat[1])
+  N1 = wildebeest$Nhat[1]
 )
 
 
@@ -81,8 +71,8 @@ model_parameters <- list(
 # starting from the same initial configuration.
 initial_values <- function() {
   list(
-    b0 = runif(1, -5, 5),
-    b1 = runif(1, -5, 5),
+    b0 = runif(1, -2, 2),
+    b1 = runif(1, -2, 2),
     sig.n = runif(1, 0, 1),
     sig.y = runif(1, 0, 1)
   )
@@ -92,7 +82,7 @@ initial_values <- function() {
 # b0, b1, sig.n and sig.y will be monitored to see if the
 # chains converge to the posterior distribution while N.est
 # y.est will be used to draw conclusions. 
-monitored_parameters <- c("b0", "b1",  "sig.n", "sig.y", "N.est")
+monitored_parameters <- c("b0", "b1",  "sig.n", "sig.y", "N")
 
 # Number of chains that we want to run
 nc <- 3
@@ -131,5 +121,5 @@ MCMCtrace(
     params = monitored_parameters[1:4],  # out parameters of interest
     iter = ni,                           # plot all iterations
     pdf = FALSE,                         # don't write to a PDF
-    ind = FALSE                          # chain specific densities 
+    ind = FALSE                          # chain specific densities
 )
