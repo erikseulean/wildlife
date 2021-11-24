@@ -5,6 +5,9 @@
 \usepackage{amsmath}
 \usepackage[noend]{algpseudocode}
 \usepackage{url}
+\usepackage[toc,page]{appendix}
+\usepackage{listings}
+
 \graphicspath{ {./images/} }
 \renewcommand{\baselinestretch}{1.5}
 \everymath{\displaystyle}
@@ -34,7 +37,7 @@ In order to fit and simulate from this model we used a MCMC simulation using the
     \end{center}
 \end{figure}
 
-Given the details above, we can draw conclusions about the model and the population itself. First, extinction probabilities are indeed inverse related to patch size (in this case length). As patch size increases, we expect the extinction probabilities to decrease, and the simulation shows a negative correlation of -0.8 between patch length and extinction probability. Furthermore, the colonization probability is indeed increasing with the connectivity, the simulation providing evidence of a very high correlation of 0.87. 
+Given the details above, we can draw conclusions about the model and the population itself. First, extinction probabilities are not inverse related to patch length. As patch size increases, we would expect the extinction probabilities to decrease, but the simulation does not provide evidence that this is the case. A reason for this could be possible because adults are territorial and male adults occupy larger areas. An alternative hypothesis is that a larger patch size has more predators that could lead to extinction of water voles. It is worth mentioning that there is a high degree of uncertainty as the Bayesian credible interval shows, and some trajectories include the possibility that extinction probability decreases with the increase of patch length. Furthermore, the colonization probability is indeed increasing with the connectivity, the simulation providing evidence of a very high correlation of 0.87 (between mean colonization probability and connectivity). This seems to be in line with the rational thought that well-connected patches are more likely to be colonized because there are more possible migration routes from adjacent connected patches.
 
 \begin{figure} [H]
     \centering
@@ -53,9 +56,75 @@ Given the details above, we can draw conclusions about the model and the populat
     \end{minipage}
 \end{figure}
 
-The above statements agree with the fact that patch occupancy dynamics emerge according to the area-isolation paradigm as mentioned in Hanski 1998, at least in the case of water voles inhabitating northwest of Scotland.
+The above statements partially agree that patch occupancy dynamics emerge according to the area-isolation paradigm as mentioned in Hanski 1998; the colonization probability is indeed driven by the connectivity, but the extinction probability does not necessarily decrease with patch length, at least in the case of water voles inhabiting northwest of Scotland.
 
-Besides checking the theories behind patch occupancy dynamics, the model also offers insights into the percentage of patches that are occupied. During the surveyed period, we expect that the percentage of sites occupied grow from $63\%$ (($54\%$ - $74\%$) Bayesian credible interval) in 2009 to around $90\%$ (($77\%$ - $96\%$) Bayesian credible interval) in 2014. A five years projection estimates that patch occupancy will continue to be over $90\%$ between 2012 and 2017.
+Besides checking the theories behind patch occupancy dynamics, the model also offers insights into the percentage of patches that are occupied. During the surveyed period, we expect that the percentage of sites occupied grow from $52\%$ (($48\%$ - $57\%$) Bayesian credible interval) in 2009 to around $70\%$ (($67\%$ - $75\%$) Bayesian credible interval) in 2014. A five years projection estimates that patch occupancy will continue to be around $70\%$ between 2012 and 2017.
+
+\begin{figure} [H]
+  \begin{center}
+      \includegraphics[scale=0.6, width=6cm]{projection.png}
+      \label{fig:occupied patches}
+      \caption{Proportion of occupied patches}
+  \end{center}
+\end{figure}
+
+\newpage
+\begin{appendices}
+\section{Convergence}
+
+\begin{figure} [H]
+  \centering
+  \textbf{Randomly selected density plots}\par\medskip
+  \begin{minipage}{.5\textwidth}
+    \centering
+    \includegraphics[width=1\linewidth]{gamma_density.png}
+    \caption{Gamma}
+    \label{fig:Gamma density plots}
+  \end{minipage}%
+  \begin{minipage}{.5\textwidth}
+    \centering
+    \includegraphics[width=1\linewidth]{epsilon_density.png}
+    \caption{Epsilon}
+    \label{fig:Epsilon density plots}
+  \end{minipage}
+\end{figure}
+
+\begin{figure} [H]
+  \begin{center}
+      \includegraphics[scale=1, width=8cm]{p_density.png}
+      \label{fig:gamma density}
+      \caption{Density plots for posterior distribution of p}
+  \end{center}
+\end{figure}
+
+\begin{figure} [H]
+  \centering
+  \textbf{Randomly selected trace plots}\par\medskip
+  \begin{minipage}{.5\textwidth}
+    \centering
+    \includegraphics[width=1\linewidth]{gamma_trace.png}
+    \caption{Gamma}
+    \label{fig:Gamma trace plots}
+  \end{minipage}%
+  \begin{minipage}{.5\textwidth}
+    \centering
+    \includegraphics[width=1\linewidth]{epsilon_trace.png}
+    \caption{Epsilon}
+    \label{fig:Epsilon trace plots}
+  \end{minipage}
+\end{figure}
+
+\begin{figure} [H]
+  \begin{center}
+      \includegraphics[scale=0.9, width=8.5cm]{p_trace.png}
+      \label{fig:gamma trace}
+      \caption{Trace plots for p}
+  \end{center}
+\end{figure}
+
+\section{Model code}
+Attached in a secondary Appendix \textit{"code.pdf"}.
+\end{appendices}
 \maketitle
 
 \end{document}\models
